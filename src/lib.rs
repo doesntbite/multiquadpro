@@ -71,7 +71,7 @@ async fn link(_: Request, cx: RouteContext<Config>) -> Result<Response> {
     get_response_from_url(cx.data.link_page_url).await
 }
 
-async fn link(_: Request, cx: RouteContext<Config>) -> Result<Response> {
+async fn converter(_: Request, cx: RouteContext<Config>) -> Result<Response> {
     get_response_from_url(cx.data.converter_page_url).await
 }
 
