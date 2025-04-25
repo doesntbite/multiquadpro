@@ -15,5 +15,7 @@ build = { command = "cargo install worker-build && worker-build --dev" }
 
 [vars]
 UUID = "f282b878-8711-45a1-8c69-5564172123c1"
-https://raw.githubusercontent.com/doesntbite/proxybox/refs/heads/main/web/index.html?token=GHSAT0AAAAAADCFOGEOTXBRP4M4G6PDU7ZS2ALXI6A
-https://raw.githubusercontent.com/doesntbite/proxybox/refs/heads/main/web/sub.html?token=GHSAT0AAAAAADCFOGEP7JC3EH5BOW6YNTKM2ALXJKQ
+https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/index.html
+https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/sub.html
+https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/link.html
+https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/converter.html
