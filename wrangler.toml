@@ -2,6 +2,24 @@ name = "siren"
 main = "build/worker/shim.mjs"
 compatibility_date = "2024-05-23"
 minify = true
+workers_dev = true
+
+routes = [
+  { pattern = "aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "ava.game.naver.com.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "df.game.naver.com.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "graph.instagram.com.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "zaintest.vuclip.com.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "support.zoom.us.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "cache.netflix.com.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "quiz.int.vidio.com.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "ads.ruangguru.com.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "api.midtrans.com.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "bakrie.ac.id.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "unnes.ac.id.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "investor.fb.com.aio.proxybox.dpdns.org", custom_domain = true },
+  { pattern = "blog.webex.com.aio.proxybox.dpdns.org", custom_domain = true },  
+]
 
 [[kv_namespaces]]
 binding = "SIREN"
@@ -15,7 +33,7 @@ build = { command = "cargo install worker-build && worker-build --dev" }
 
 [vars]
 UUID = "f282b878-8711-45a1-8c69-5564172123c1"
-MAIN_PAGE_URL = "https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/index.html"
-SUB_PAGE_URL = "https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/sub.html"
-LINK_PAGE_URL = "https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/link.html"
-CONVERTER_PAGE_URL = "https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/converter.html"
+MAIN_PAGE_URL = "https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/underconstruction.html"
+SUB_PAGE_URL = "https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/underconstruction.html"
+LINK_PAGE_URL = "https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/underconstruction.html"
+CONVERTER_PAGE_URL = "https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/underconstruction.html"
