@@ -40,6 +40,7 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
         .on_async("/", fe)
         .on_async("/sub", sub)
         .on_async("/link", link)  // Changed to on_async
+        .on_async("/converter", converter)  // Changed to on_async
         .on_async("/aioproxybot/:proxyip", tunnel)
         .run(req, env)
         .await
