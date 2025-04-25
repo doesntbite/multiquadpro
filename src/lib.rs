@@ -13,8 +13,14 @@ use worker::*;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-static PROXYIP_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"^.+-\d+$").unwrap());
-static PROXYKV_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"^([A-Z]{2})").unwrap());
+static PROXYIP_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])([:-])\d+$")
+        .expect("Invalid PROXYIP_PATTERN regex")
+});
+static PROXYKV_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^[A-Z]{2}(?:,[A-Z]{2})*$")
+        .expect("Invalid PROXYKV_PATTERN regex")
+});
 
 #[event(fetch)]
 async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
@@ -42,6 +48,7 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
         .on_async("/link", link)  // Changed to on_async
         .on_async("/converter", converter)  // Changed to on_async
         .on_async("/aioproxybot/:proxyip", tunnel)
+        .on("/config-links", generate_config_links)  // New endpoint
         .run(req, env)
         .await
 }
@@ -102,9 +109,11 @@ async fn tunnel(req: Request, mut cx: RouteContext<Config>) -> Result<Response> 
 
     let upgrade = req.headers().get("Upgrade")?.unwrap_or_default();
     if upgrade == "websocket".to_string() && PROXYIP_PATTERN.is_match(&proxyip) {
-        if let Some((addr, port_str)) = proxyip.split_once('-') {
-            if let Ok(port) = port_str.parse() {
-                cx.data.proxy_addr = addr.to_string();
+        // Handle kedua format pemisah (:-)
+        let parts: Vec<&str> = proxyip.split(|c| c == '-' || c == ':').collect();
+        if parts.len() == 2 {
+            if let Ok(port) = parts[1].parse() {
+                cx.data.proxy_addr = parts[0].to_string();
                 cx.data.proxy_port = port;
             }
         }
@@ -126,7 +135,7 @@ async fn tunnel(req: Request, mut cx: RouteContext<Config>) -> Result<Response> 
 
 }
 
-fn link(_: Request, cx: RouteContext<Config>) -> Result<Response> {
+fn generate_config_links(_: Request, cx: RouteContext<Config>) -> Result<Response> {
     let host = cx.data.host.to_string();
     let uuid = cx.data.uuid.to_string();
 
