@@ -13,25 +13,40 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
     let client = Client::new();
     let body = req_wireformat.to_vec();
     
-    // Try Cloudflare (1.1.1.1) first
+    // Try Quad9 first
     let response = client
-        .post("https://1.1.1.1/dns-query")
+        .post("https://dns.quad9.net/dns-query")
         .headers(headers.clone())
         .body(body.clone())
         .send()
         .await;
     
-    // If Cloudflare fails, try Google (8.8.8.8)
+    // If Quad9 fails, try Google
     let response = match response {
         Ok(resp) => Ok(resp),
-        Err(_) => {
+        Err(e) => {
+            log::warn!("Quad9 request failed: {}, trying Google...", e);
             client
                 .post("https://8.8.8.8/dns-query")
+                .headers(headers.clone())
+                .body(body.clone())
+                .send()
+                .await
+        }
+    };
+    
+    // If Google fails, try Cloudflare
+    let response = match response {
+        Ok(resp) => Ok(resp),
+        Err(e) => {
+            log::warn!("Google request failed: {}, trying Cloudflare...", e);
+            client
+                .post("https://1.1.1.1/dns-query")
                 .headers(headers)
                 .body(body)
                 .send()
                 .await
-                .context("Both Cloudflare and Google DNS-over-HTTPS requests failed")
+                .context("All DNS-over-HTTPS providers failed (Quad9, Google, Cloudflare)")
         }
     }?;
     
