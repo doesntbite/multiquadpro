@@ -2,6 +2,7 @@ name = "siren"
 main = "build/worker/shim.mjs"
 compatibility_date = "2024-05-23"
 minify = true
+workers_dev = true
 
 routes = [
   { pattern = "aio.proxybox.dpdns.org", custom_domain = true },
