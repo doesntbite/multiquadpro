@@ -13,14 +13,8 @@ use worker::*;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-static PROXYIP_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])([:-])\d+$")
-        .expect("Invalid PROXYIP_PATTERN regex")
-});
-static PROXYKV_PATTERN: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^[A-Z]{2}(?:,[A-Z]{2})*$")
-        .expect("Invalid PROXYKV_PATTERN regex")
-});
+static PROXYIP_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"^.+-\d+$").unwrap());
+static PROXYKV_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"^([A-Z]{2})").unwrap());
 
 #[event(fetch)]
 async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
@@ -42,13 +36,14 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
         link_page_url,
         converter_page_url
     };
+
     Router::with_data(config)
         .on_async("/", fe)
         .on_async("/sub", sub)
         .on_async("/link", link)  // Changed to on_async
-        .on_async("/converter", converter)  // Changed to on_async
+        .on_async("/converter", link)  // Changed to on_async
+        .on_async("/:proxyip", tunnel)
         .on_async("/aioproxybot/:proxyip", tunnel)
-        .on("/config-links", generate_config_links)  // New endpoint
         .run(req, env)
         .await
 }
@@ -67,6 +62,7 @@ async fn sub(_: Request, cx: RouteContext<Config>) -> Result<Response> {
     get_response_from_url(cx.data.sub_page_url).await
 }
 
+// Changed to fetch from URL like fe and sub
 async fn link(_: Request, cx: RouteContext<Config>) -> Result<Response> {
     get_response_from_url(cx.data.link_page_url).await
 }
@@ -107,24 +103,24 @@ async fn tunnel(req: Request, mut cx: RouteContext<Config>) -> Result<Response> 
         proxyip = proxy_kv[&proxyip][proxyip_index].clone().replace(":", "-");
     }
 
-    let upgrade = req.headers().get("Upgrade")?.unwrap_or_default();
-    if upgrade == "websocket".to_string() && PROXYIP_PATTERN.is_match(&proxyip) {
-        // Handle kedua format pemisah (:-)
-        let parts: Vec<&str> = proxyip.split(|c| c == '-' || c == ':').collect();
-        if parts.len() == 2 {
-            if let Ok(port) = parts[1].parse() {
-                cx.data.proxy_addr = parts[0].to_string();
+    if PROXYIP_PATTERN.is_match(&proxyip) {
+        if let Some((addr, port_str)) = proxyip.split_once('-') {
+            if let Ok(port) = port_str.parse() {
+                cx.data.proxy_addr = addr.to_string();
                 cx.data.proxy_port = port;
             }
         }
-        
+    }
+    
+    let upgrade = req.headers().get("Upgrade")?.unwrap_or("".to_string());
+    if upgrade == "websocket".to_string() {
         let WebSocketPair { server, client } = WebSocketPair::new()?;
         server.accept()?;
     
         wasm_bindgen_futures::spawn_local(async move {
             let events = server.events().unwrap();
             if let Err(e) = ProxyStream::new(cx.data, &server, events).process().await {
-                console_error!("[tunnel]: {}", e);
+                console_log!("[tunnel]: {}", e);
             }
         });
     
@@ -132,35 +128,4 @@ async fn tunnel(req: Request, mut cx: RouteContext<Config>) -> Result<Response> 
     } else {
         Response::from_html("hi from wasm!")
     }
-
-}
-
-fn generate_config_links(_: Request, cx: RouteContext<Config>) -> Result<Response> {
-    let host = cx.data.host.to_string();
-    let uuid = cx.data.uuid.to_string();
-
-    let vmess_link = {
-        let config = json!({
-            "ps": "siren vmess",
-            "v": "2",
-            "add": host,
-            "port": "80",
-            "id": uuid,
-            "aid": "0",
-            "scy": "zero",
-            "net": "ws",
-            "type": "none",
-            "host": host,
-            "path": "/KR",
-            "tls": "",
-            "sni": "",
-            "alpn": ""}
-        );
-        format!("vmess://{}", URL_SAFE.encode(config.to_string()))
-    };
-    let vless_link = format!("vless://{uuid}@{host}:443?encryption=none&type=ws&host={host}&path=%2FKR&security=tls&sni={host}#siren vless");
-    let trojan_link = format!("trojan://{uuid}@{host}:443?encryption=none&type=ws&host={host}&path=%2FKR&security=tls&sni={host}#siren trojan");
-    let ss_link = format!("ss://{}@{host}:443?plugin=v2ray-plugin%3Btls%3Bmux%3D0%3Bmode%3Dwebsocket%3Bpath%3D%2FKR%3Bhost%3D{host}#siren ss", URL_SAFE.encode(format!("none:{uuid}")));
-    
-    Response::from_body(ResponseBody::Body(format!("{vmess_link}\n{vless_link}\n{trojan_link}\n{ss_link}").into()))
 }
