@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Result};
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE};
 use reqwest::Client;
 use std::time::Duration;
@@ -35,17 +35,16 @@ pub async fn doh(req_wireformat: &[u8], max_retries: u8) -> Result<Vec<u8>> {
                     return Ok(bytes.to_vec());
                 }
                 Err(e) => {
-                    last_error = Some(e);
-                    continue; // Coba provider berikutnya
+                    last_error = Some(e.into()); // Konversi reqwest::Error ke anyhow::Error
+                    continue;
                 }
             }
         }
         
-        // Jika semua provider gagal dalam satu iterasi, tunggu sebentar sebelum retry
         tokio::time::sleep(Duration::from_secs(1)).await;
     }
 
     Err(last_error.unwrap_or_else(|| {
-        anyhow::anyhow!("All DNS-over-HTTPS providers failed after {} retries", max_retries)
+        anyhow!("All DNS-over-HTTPS providers failed after {} retries", max_retries)
     }))
 }
