@@ -1,8 +1,9 @@
 use anyhow::{Context, Result};
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE};
 use reqwest::Client;
+use std::time::Duration;
 
-pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
+pub async fn doh(req_wireformat: &[u8], max_retries: u8) -> Result<Vec<u8>> {
     let mut headers = HeaderMap::new();
     headers.insert(
         CONTENT_TYPE,
@@ -12,42 +13,39 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
     
     let client = Client::new();
     let body = req_wireformat.to_vec();
+    let providers = [
+        "https://8.8.8.8/dns-query",      // Google
+        "https://dns.quad9.net/dns-query", // Quad9
+        "https://1.1.1.1/dns-query",       // Cloudflare
+    ];
+
+    let mut last_error = None;
     
-    // Try Google first
-    let response = client
-        .post("https://8.8.8.8/dns-query")
-        .headers(headers.clone())
-        .body(body.clone())
-        .send()
-        .await;
-    
-    // If Google fails, try Quad9
-    let response = match response {
-        Ok(resp) => Ok(resp),
-        Err(e) => {
-            client
-                .post("https://dns.quad9.net/dns-query")
+    for _ in 0..max_retries {
+        for provider in &providers {
+            match client
+                .post(*provider)
                 .headers(headers.clone())
                 .body(body.clone())
                 .send()
                 .await
+            {
+                Ok(response) => {
+                    let bytes = response.bytes().await?;
+                    return Ok(bytes.to_vec());
+                }
+                Err(e) => {
+                    last_error = Some(e);
+                    continue; // Coba provider berikutnya
+                }
+            }
         }
-    };
-    
-    // If Quad9 fails, try Cloudflare
-    let response = match response {
-        Ok(resp) => Ok(resp),
-        Err(e) => {
-            client
-                .post("https://1.1.1.1/dns-query")
-                .headers(headers)
-                .body(body)
-                .send()
-                .await
-                .context("All DNS-over-HTTPS providers failed (Google, Quad9, Cloudflare)")
-        }
-    }?;
-    
-    let bytes = response.bytes().await?;
-    Ok(bytes.to_vec())
+        
+        // Jika semua provider gagal dalam satu iterasi, tunggu sebentar sebelum retry
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    }
+
+    Err(last_error.unwrap_or_else(|| {
+        anyhow::anyhow!("All DNS-over-HTTPS providers failed after {} retries", max_retries)
+    }))
 }
