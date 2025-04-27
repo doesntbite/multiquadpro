@@ -13,20 +13,20 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
     let client = Client::new();
     let body = req_wireformat.to_vec();
     
-    // Try Quad9 first
+    // Try Google first
     let response = client
-        .post("https://dns.quad9.net/dns-query")
+        .post("https://8.8.8.8/dns-query")
         .headers(headers.clone())
         .body(body.clone())
         .send()
         .await;
     
-    // If Quad9 fails, try Google
+    // If Google fails, try Quad9
     let response = match response {
         Ok(resp) => Ok(resp),
         Err(e) => {
             client
-                .post("https://8.8.8.8/dns-query")
+                .post("https://dns.quad9.net/dns-query")
                 .headers(headers.clone())
                 .body(body.clone())
                 .send()
@@ -34,7 +34,7 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
         }
     };
     
-    // If Google fails, try Cloudflare
+    // If Quad9 fails, try Cloudflare
     let response = match response {
         Ok(resp) => Ok(resp),
         Err(e) => {
@@ -44,7 +44,7 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
                 .body(body)
                 .send()
                 .await
-                .context("All DNS-over-HTTPS providers failed (Quad9, Google, Cloudflare)")
+                .context("All DNS-over-HTTPS providers failed (Google, Quad9, Cloudflare)")
         }
     }?;
     
