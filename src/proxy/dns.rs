@@ -1,5 +1,9 @@
+use anyhow::Result;
 use futures_util::future::select_ok;
-use reqwest::Client;
+use reqwest::{
+    header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE},
+    Client,
+};
 
 pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
     let mut headers = HeaderMap::new();
@@ -7,7 +11,10 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
         CONTENT_TYPE,
         HeaderValue::from_static("application/dns-message"),
     );
-    headers.insert(ACCEPT, HeaderValue::from_static("application/dns-message"));
+    headers.insert(
+        ACCEPT,
+        HeaderValue::from_static("application/dns-message"),
+    );
 
     let providers = [
         "https://1.1.1.1/dns-query",
@@ -17,11 +24,13 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
 
     let client = Client::new();
     let requests = providers.iter().map(|&provider| {
-        client
-            .post(provider)
-            .headers(headers.clone())
-            .body(req_wireformat.to_vec())
-            .send()
+        Box::pin(
+            client
+                .post(provider)
+                .headers(headers.clone())
+                .body(req_wireformat.to_vec())
+                .send(),
+        )
     });
 
     let result = select_ok(requests).await?;
