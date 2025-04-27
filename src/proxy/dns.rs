@@ -25,7 +25,6 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
     let response = match response {
         Ok(resp) => Ok(resp),
         Err(e) => {
-            log::warn!("Quad9 request failed: {}, trying Google...", e);
             client
                 .post("https://8.8.8.8/dns-query")
                 .headers(headers.clone())
@@ -39,7 +38,6 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
     let response = match response {
         Ok(resp) => Ok(resp),
         Err(e) => {
-            log::warn!("Google request failed: {}, trying Cloudflare...", e);
             client
                 .post("https://1.1.1.1/dns-query")
                 .headers(headers)
