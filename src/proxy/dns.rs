@@ -19,7 +19,6 @@ pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
     let providers = [
         "https://1.1.1.1/dns-query",
         "https://8.8.8.8/dns-query",
-        "https://dns.google/dns-query",
     ];
 
     let client = Client::new();
