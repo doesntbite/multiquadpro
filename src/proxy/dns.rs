@@ -1,32 +1,37 @@
 use anyhow::Result;
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE};
+use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE, USER_AGENT};
 use reqwest::Client;
 use std::time::Duration;
 
-pub async fn doh(req_wireformat: &[u8]) -> Result<Vec<u8>> {
-    // Siapkan header DNS-over-HTTPS
+pub async fn doh(req_wireformat: &[u8], endpoint: Option<&str>) -> Result<Vec<u8>> {
+    // Prepare DNS-over-HTTPS headers
     let mut headers = HeaderMap::new();
     headers.insert(
         CONTENT_TYPE,
         HeaderValue::from_static("application/dns-message"),
     );
     headers.insert(ACCEPT, HeaderValue::from_static("application/dns-message"));
+    headers.insert(USER_AGENT, HeaderValue::from_static("rust-doh-client/1.0"));
 
-    // Buat client HTTP dengan timeout
+    // Create HTTP client
     let client = Client::builder()
-        .timeout(Duration::from_secs(5))
-        .build()?; // Tangani error pembuatan client
+        .connect_timeout(Duration::from_secs(5))  // Set connection timeout
+        .build()?;
 
-    // Kirim permintaan POST ke Cloudflare DoH endpoint
+    // Use provided endpoint or default to Cloudflare
+    let endpoint = endpoint.unwrap_or("https://cloudflare-dns.com/dns-query");
+
+    // Send POST request to DoH endpoint with request timeout
     let response = client
-        .post("https://cloudflare-dns.com/dns-query") // Gunakan hostname, bukan IP
+        .post(endpoint)
+        .timeout(Duration::from_secs(5))  // Set request timeout
         .headers(headers)
         .body(req_wireformat.to_vec())
         .send()
         .await?
-        .error_for_status()? // Tangani error HTTP
+        .error_for_status()?
         .bytes()
-        .await?; // Ambil isi respons sebagai bytes
+        .await?;
 
     Ok(response.to_vec())
 }
