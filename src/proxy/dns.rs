@@ -13,18 +13,15 @@ pub async fn doh(req_wireformat: &[u8], endpoint: Option<&str>) -> Result<Vec<u8
     headers.insert(ACCEPT, HeaderValue::from_static("application/dns-message"));
     headers.insert(USER_AGENT, HeaderValue::from_static("rust-doh-client/1.0"));
 
-    // Create HTTP client
-    let client = Client::builder()
-        .connect_timeout(Duration::from_secs(5))  // Set connection timeout
-        .build()?;
+    // Create HTTP client (no timeout configuration available in WASM)
+    let client = Client::new();
 
     // Use provided endpoint or default to Cloudflare
     let endpoint = endpoint.unwrap_or("https://cloudflare-dns.com/dns-query");
 
-    // Send POST request to DoH endpoint with request timeout
+    // Send POST request to DoH endpoint
     let response = client
         .post(endpoint)
-        .timeout(Duration::from_secs(5))  // Set request timeout
         .headers(headers)
         .body(req_wireformat.to_vec())
         .send()
