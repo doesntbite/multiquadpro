@@ -1,7 +1,6 @@
 use anyhow::Result;
 use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE, USER_AGENT};
 use reqwest::Client;
-use std::time::Duration;
 
 pub async fn doh(req_wireformat: &[u8], endpoint: Option<&str>) -> Result<Vec<u8>> {
     // Prepare DNS-over-HTTPS headers
@@ -13,7 +12,7 @@ pub async fn doh(req_wireformat: &[u8], endpoint: Option<&str>) -> Result<Vec<u8
     headers.insert(ACCEPT, HeaderValue::from_static("application/dns-message"));
     headers.insert(USER_AGENT, HeaderValue::from_static("rust-doh-client/1.0"));
 
-    // Create HTTP client (no timeout configuration available in WASM)
+    // Create HTTP client
     let client = Client::new();
 
     // Use provided endpoint or default to Cloudflare
