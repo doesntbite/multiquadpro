@@ -1,20 +1,20 @@
 use crate::config::Config;
 use std::pin::Pin;
+use std::time::Duration;
 use std::task::{Context, Poll};
 use bytes::{BufMut, BytesMut};
 use futures_util::Stream;
 use pin_project_lite::pin_project;
 use pretty_bytes::converter::convert;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf};
-use tokio::time::{timeout, Duration};
 use worker::*;
 
 // Configuration constants
 const INITIAL_BUFFER_SIZE: usize = 8 * 1024; // 8KB
 const MAX_WEBSOCKET_SIZE: usize = 128 * 1024; // 128kb (increased from 64kb)
 const MAX_BUFFER_SIZE: usize = 4 * 1024 * 1024; // 4MB (increased from 512kb)
-const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
-const IO_TIMEOUT: Duration = Duration::from_secs(30);
+const CONNECT_TIMEOUT_SECS: u64 = 5;
+const IO_TIMEOUT_SECS: u64 = 30;
 const MAX_RETRIES: usize = 3;
 
 pin_project! {
@@ -73,12 +73,12 @@ impl<'a> ProxyStream<'a> {
                 }
                 Some(Err(e)) => {
                     retries += 1;
-                    tokio::time::sleep(Duration::from_millis(100 * retries as u64)).await;
+                    worker::console_log!("Retry {}: {}", retries, e);
                     continue;
                 }
                 None => {
                     retries += 1;
-                    tokio::time::sleep(Duration::from_millis(100 * retries as u64)).await;
+                    worker::console_log!("Retry {}: no message", retries);
                     continue;
                 }
             }
@@ -128,7 +128,7 @@ impl<'a> ProxyStream<'a> {
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::WouldBlock {
                     // Send backpressure signal
-                    self.ws.send(Message::Ping(vec![])).map_err(|e| {
+                    self.ws.send(WebsocketEvent::Ping(vec![])).map_err(|e| {
                         Error::RustError(format!("backpressure signal failed: {}", e))
                     })?;
                     Err(Error::RustError("backpressure applied".to_string()))
@@ -190,21 +190,19 @@ impl<'a> ProxyStream<'a> {
     }
 
     pub async fn handle_tcp_outbound(&mut self, addr: String, port: u16) -> Result<()> {
-        let mut remote_socket = timeout(CONNECT_TIMEOUT, 
-            Socket::builder().connect(&addr, port)
-        ).await.map_err(|_| {
-            Error::RustError(format!("connection timeout to {}:{}", addr, port))
-        })??;
+        let remote_socket = Socket::builder()
+            .connect(&addr, port)
+            .map_err(|e| Error::RustError(format!("connection error to {}:{} - {}", addr, port, e)))?;
 
-        timeout(IO_TIMEOUT, remote_socket.opened()).await.map_err(|_| {
-            Error::RustError(format!("socket open timeout to {}:{}", addr, port))
-        })??;
+        remote_socket.opened().await.map_err(|e| {
+            Error::RustError(format!("socket open error to {}:{} - {}", addr, port, e))
+        })?;
 
-        let (bytes_up, bytes_down) = timeout(IO_TIMEOUT, 
-            tokio::io::copy_bidirectional(self, &mut remote_socket)
-        ).await.map_err(|_| {
-            Error::RustError(format!("i/o timeout with {}:{}", addr, port))
-        })??;
+        let (bytes_up, bytes_down) = tokio::io::copy_bidirectional(self, &mut remote_socket)
+            .await
+            .map_err(|e| {
+                Error::RustError(format!("i/o error with {}:{} - {}", addr, port, e))
+            })?;
 
         console_log!(
             "connection to {}:{} completed, uploaded: {}, downloaded: {}",
@@ -220,11 +218,11 @@ impl<'a> ProxyStream<'a> {
     pub async fn handle_udp_outbound(&mut self) -> Result<()> {
         let mut buff = vec![0u8; 65535];
 
-        let n = timeout(IO_TIMEOUT, self.read(&mut buff)).await??;
+        let n = self.read(&mut buff).await?;
         let data = &buff[..n];
         
         if crate::dns::doh(data).await.is_ok() {
-            timeout(IO_TIMEOUT, self.write(&data)).await??;
+            self.write(&data).await?;
         };
         
         Ok(())
@@ -241,22 +239,21 @@ impl<'a> ProxyStream<'a> {
 
 impl<'a> AsyncRead for ProxyStream<'a> {
     fn poll_read(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut ReadBuf<'_>,
     ) -> Poll<tokio::io::Result<()>> {
-        let mut this = self.project();
-        this.cleanup_buffer();
+        self.cleanup_buffer();
 
         loop {
-            let size = std::cmp::min(this.buffer.len(), buf.remaining());
+            let size = std::cmp::min(self.buffer.len(), buf.remaining());
             if size > 0 {
-                buf.put_slice(&this.buffer.split_to(size));
-                *this.backpressure_flag = false;
+                buf.put_slice(&self.buffer.split_to(size));
+                self.backpressure_flag = false;
                 return Poll::Ready(Ok(()));
             }
 
-            match this.events.as_mut().poll_next(cx) {
+            match self.as_mut().project().events.poll_next(cx) {
                 Poll::Ready(Some(Ok(WebsocketEvent::Message(msg)))) => {
                     if let Some(data) = msg.bytes() {
                         if data.len() > MAX_WEBSOCKET_SIZE {
@@ -266,9 +263,9 @@ impl<'a> AsyncRead for ProxyStream<'a> {
                             )));
                         }
                         
-                        if this.buffer.len() + data.len() > MAX_BUFFER_SIZE {
-                            *this.backpressure_flag = true;
-                            if let Err(e) = this.ws.send(Message::Ping(vec![])) {
+                        if self.buffer.len() + data.len() > MAX_BUFFER_SIZE {
+                            self.backpressure_flag = true;
+                            if let Err(e) = self.ws.send(WebsocketEvent::Ping(vec![])) {
                                 return Poll::Ready(Err(std::io::Error::new(
                                     std::io::ErrorKind::ConnectionAborted,
                                     e.to_string(),
@@ -277,13 +274,13 @@ impl<'a> AsyncRead for ProxyStream<'a> {
                             return Poll::Pending;
                         }
                         
-                        this.buffer.put_slice(&data);
+                        self.buffer.put_slice(&data);
                     }
                 }
                 Poll::Pending => {
-                    if *this.backpressure_flag {
+                    if self.backpressure_flag {
                         // Send another ping if we're still in backpressure mode
-                        if let Err(e) = this.ws.send(Message::Ping(vec![])) {
+                        if let Err(e) = self.ws.send(WebsocketEvent::Ping(vec![])) {
                             return Poll::Ready(Err(std::io::Error::new(
                                 std::io::ErrorKind::ConnectionAborted,
                                 e.to_string(),
@@ -304,8 +301,7 @@ impl<'a> AsyncWrite for ProxyStream<'a> {
         _: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<tokio::io::Result<usize>> {
-        let this = self.project();
-        match this.ws.send_with_bytes(buf) {
+        match self.ws.send_with_bytes(buf) {
             Ok(_) => Poll::Ready(Ok(buf.len())),
             Err(e) => Poll::Ready(Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -319,7 +315,7 @@ impl<'a> AsyncWrite for ProxyStream<'a> {
     }
 
     fn poll_shutdown(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<tokio::io::Result<()>> {
-        match self.ws.close(Some(1000), Some("normal shutdown".to_string())) {
+        match self.ws.close(Some(1000), Some("normal shutdown")) {
             Ok(_) => Poll::Ready(Ok(())),
             Err(e) => Poll::Ready(Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -331,6 +327,6 @@ impl<'a> AsyncWrite for ProxyStream<'a> {
 
 impl<'a> Drop for ProxyStream<'a> {
     fn drop(&mut self) {
-        let _ = self.ws.close(1000, "proxy stream dropped");
+        let _ = self.ws.close(Some(1000), Some("proxy stream dropped"));
     }
 }
