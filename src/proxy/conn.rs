@@ -1,6 +1,5 @@
 use crate::config::Config;
 use std::pin::Pin;
-use std::time::Duration;
 use std::task::{Context, Poll};
 use bytes::{BufMut, BytesMut};
 use futures_util::Stream;
@@ -13,11 +12,10 @@ use worker::*;
 const INITIAL_BUFFER_SIZE: usize = 8 * 1024; // 8KB
 const MAX_WEBSOCKET_SIZE: usize = 128 * 1024; // 128kb (increased from 64kb)
 const MAX_BUFFER_SIZE: usize = 4 * 1024 * 1024; // 4MB (increased from 512kb)
-const CONNECT_TIMEOUT_SECS: u64 = 5;
-const IO_TIMEOUT_SECS: u64 = 30;
 const MAX_RETRIES: usize = 3;
 
 pin_project! {
+    #[project = ProxyStreamProj]
     pub struct ProxyStream<'a> {
         pub config: Config,
         pub ws: &'a WebSocket,
@@ -127,8 +125,8 @@ impl<'a> ProxyStream<'a> {
             }
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::WouldBlock {
-                    // Send backpressure signal
-                    self.ws.send(WebsocketEvent::Ping(vec![])).map_err(|e| {
+                    // Send backpressure signal using raw bytes since Ping isn't available
+                    self.ws.send_with_bytes(&[0x89, 0x00]).map_err(|e| {
                         Error::RustError(format!("backpressure signal failed: {}", e))
                     })?;
                     Err(Error::RustError("backpressure applied".to_string()))
@@ -140,7 +138,7 @@ impl<'a> ProxyStream<'a> {
     }
 
     pub fn is_vless(&self, buffer: &[u8]) -> bool {
-        buffer.len() > 0 && buffer[0] == 0
+        !buffer.is_empty() && buffer[0] == 0
     }
 
     fn is_shadowsocks(&self, buffer: &[u8]) -> bool {
@@ -190,7 +188,7 @@ impl<'a> ProxyStream<'a> {
     }
 
     pub async fn handle_tcp_outbound(&mut self, addr: String, port: u16) -> Result<()> {
-        let remote_socket = Socket::builder()
+        let mut remote_socket = Socket::builder()
             .connect(&addr, port)
             .map_err(|e| Error::RustError(format!("connection error to {}:{} - {}", addr, port, e)))?;
 
@@ -239,21 +237,22 @@ impl<'a> ProxyStream<'a> {
 
 impl<'a> AsyncRead for ProxyStream<'a> {
     fn poll_read(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut ReadBuf<'_>,
     ) -> Poll<tokio::io::Result<()>> {
-        self.cleanup_buffer();
+        let mut this = self.project();
+        this.cleanup_buffer();
 
         loop {
-            let size = std::cmp::min(self.buffer.len(), buf.remaining());
+            let size = std::cmp::min(this.buffer.len(), buf.remaining());
             if size > 0 {
-                buf.put_slice(&self.buffer.split_to(size));
-                self.backpressure_flag = false;
+                buf.put_slice(&this.buffer.split_to(size));
+                *this.backpressure_flag = false;
                 return Poll::Ready(Ok(()));
             }
 
-            match self.as_mut().project().events.poll_next(cx) {
+            match this.events.as_mut().poll_next(cx) {
                 Poll::Ready(Some(Ok(WebsocketEvent::Message(msg)))) => {
                     if let Some(data) = msg.bytes() {
                         if data.len() > MAX_WEBSOCKET_SIZE {
@@ -263,9 +262,10 @@ impl<'a> AsyncRead for ProxyStream<'a> {
                             )));
                         }
                         
-                        if self.buffer.len() + data.len() > MAX_BUFFER_SIZE {
-                            self.backpressure_flag = true;
-                            if let Err(e) = self.ws.send(WebsocketEvent::Ping(vec![])) {
+                        if this.buffer.len() + data.len() > MAX_BUFFER_SIZE {
+                            *this.backpressure_flag = true;
+                            // Send WebSocket ping frame (0x89 opcode) directly
+                            if let Err(e) = this.ws.send_with_bytes(&[0x89, 0x00]) {
                                 return Poll::Ready(Err(std::io::Error::new(
                                     std::io::ErrorKind::ConnectionAborted,
                                     e.to_string(),
@@ -274,13 +274,13 @@ impl<'a> AsyncRead for ProxyStream<'a> {
                             return Poll::Pending;
                         }
                         
-                        self.buffer.put_slice(&data);
+                        this.buffer.put_slice(&data);
                     }
                 }
                 Poll::Pending => {
-                    if self.backpressure_flag {
+                    if *this.backpressure_flag {
                         // Send another ping if we're still in backpressure mode
-                        if let Err(e) = self.ws.send(WebsocketEvent::Ping(vec![])) {
+                        if let Err(e) = this.ws.send_with_bytes(&[0x89, 0x00]) {
                             return Poll::Ready(Err(std::io::Error::new(
                                 std::io::ErrorKind::ConnectionAborted,
                                 e.to_string(),
