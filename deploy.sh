@@ -1,4 +1,4 @@
-for i in {1..10}; do
+for i in {1..2}; do
   name="siren$i"
   domain="zxc$i.sumbangsih.dpdns.org"
 
