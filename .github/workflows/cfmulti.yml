@@ -1,0 +1,48 @@
+name: Deploy 10 Workers to Custom Domains
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Deploy 10 Workers with Custom Routes
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: |
+          # Buat array nama Worker dan domain
+          for i in $(seq 1 10); do
+            WORKER="siren$i"
+            DOMAIN="zxc$i.sumbangsih.dpdns.org"
+            echo "🚀 Deploying $WORKER to $DOMAIN"
+
+            # Reset wrangler.toml
+            cp wrangler.toml wrangler.temp.toml
+
+            # Ganti name
+            sed -i "s/^name = \".*\"/name = \"$WORKER\"/" wrangler.temp.toml
+
+            # Tambahkan route block
+            echo "" >> wrangler.temp.toml
+            echo "[route]" >> wrangler.temp.toml
+            echo "pattern = \"$DOMAIN/*\"" >> wrangler.temp.toml
+            echo "zone_id = \"$CF_ZONE_ID\"" >> wrangler.temp.toml
+
+            # Deploy
+            wrangler deploy --config wrangler.temp.toml
+
+            echo "✅ Deployed $WORKER to https://$DOMAIN"
+          done
