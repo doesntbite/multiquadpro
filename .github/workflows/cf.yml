@@ -30,7 +30,7 @@ jobs:
           for NAME in "${WORKERS[@]}"; do
             echo "Deploying $NAME..."
             sed -i.bak "s/^name = \".*\"/name = \"$NAME\"/" wrangler.toml
-            wrangler publish
+            wrangler deploy
           done
           
           mv wrangler.toml.bak wrangler.toml
