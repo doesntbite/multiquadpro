@@ -6,38 +6,43 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Wrangler
+      - name: 🧱 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: 📦 Install Wrangler
         run: npm install -g wrangler
 
-      - name: Deploy Workers with Custom Domains
+      - name: 🚀 Deploy Workers with Custom Domains
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          for i in $(seq 1 2); do
-            WORKER="siren$i"
-            DOMAIN="zxc$i.sumbangsih.dpdns.org"
-            echo "🚀 Deploying $WORKER to https://$DOMAIN"
+          cp wrangler.toml wrangler.toml.bak
 
-            # Buat salinan wrangler.toml dasar
-            cp wrangler.toml wrangler.temp.toml
+          for i in {1..2}; do
+            name="siren$i"
+            domain="zxc$i.sumbangsih.dpdns.org"
 
-            # Ganti name
-            sed -i "s/^name = \".*\"/name = \"$WORKER\"/" wrangler.temp.toml
+            echo "🌐 Deploying $name → $domain"
 
-            # Tambahkan routes block
-            echo "" >> wrangler.temp.toml
-            echo "routes = [" >> wrangler.temp.toml
-            echo "  { pattern = \"$DOMAIN\", custom_domain = true }" >> wrangler.temp.toml
-            echo "]" >> wrangler.temp.toml
+            cp wrangler.toml.bak wrangler.temp.toml
 
-            # Deploy dengan custom domain
+            # Ganti nama Worker
+            sed -i "s/^name = \".*\"/name = \"$name\"/" wrangler.temp.toml
+
+            # Tambahkan routes dengan custom domain
+            echo -e "\nroutes = [\n  { pattern = \"$domain\", custom_domain = true }\n]" >> wrangler.temp.toml
+
+            # Deploy Worker
             wrangler deploy --config wrangler.temp.toml
 
-            echo "✅ Deployed $WORKER to https://$DOMAIN"
+            echo "✅ Finished $name"
           done
+
+          rm -f wrangler.temp.toml
