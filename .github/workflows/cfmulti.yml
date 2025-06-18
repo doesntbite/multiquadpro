@@ -11,10 +11,10 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🧱 Setup Node.js
+      - name: 🧱 Setup Node.js (v20+ untuk Wrangler)
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: 📦 Install Wrangler
         run: npm install -g wrangler
@@ -25,24 +25,19 @@ jobs:
         run: |
           cp wrangler.toml wrangler.toml.bak
 
-          for i in {1..2}; do
+          for i in {1..10}; do
             name="siren$i"
             domain="zxc$i.sumbangsih.dpdns.org"
 
             echo "🌐 Deploying $name → $domain"
 
             cp wrangler.toml.bak wrangler.temp.toml
-
-            # Ganti nama Worker
             sed -i "s/^name = \".*\"/name = \"$name\"/" wrangler.temp.toml
-
-            # Tambahkan routes dengan custom domain
             echo -e "\nroutes = [\n  { pattern = \"$domain\", custom_domain = true }\n]" >> wrangler.temp.toml
 
-            # Deploy Worker
             wrangler deploy --config wrangler.temp.toml
 
-            echo "✅ Finished $name"
+            echo "✅ Done $name"
           done
 
           rm -f wrangler.temp.toml
