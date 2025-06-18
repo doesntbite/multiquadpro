@@ -25,19 +25,27 @@ jobs:
         run: |
           cp wrangler.toml wrangler.toml.bak
 
-          for i in {1..10}; do
+          for i in {1..2}; do
             name="siren$i"
             domain="zxc$i.sumbangsih.dpdns.org"
 
             echo "🌐 Deploying $name → $domain"
 
             cp wrangler.toml.bak wrangler.temp.toml
+
+            # Ganti name
             sed -i "s/^name = \".*\"/name = \"$name\"/" wrangler.temp.toml
+
+            # Hapus baris routes lama jika ada
+            sed -i '/^routes = \[/,/]/d' wrangler.temp.toml
+
+            # Tambahkan routes baru
             echo -e "\nroutes = [\n  { pattern = \"$domain\", custom_domain = true }\n]" >> wrangler.temp.toml
 
+            # Deploy
             wrangler deploy --config wrangler.temp.toml
 
-            echo "✅ Done $name"
+            echo "✅ Selesai deploy $name → $domain"
           done
 
           rm -f wrangler.temp.toml
