@@ -4,9 +4,6 @@ main = "build/worker/shim.mjs"
 compatibility_date = "2024-05-23"
 minify = true
 
-[deployments]
-custom_domain = true
-
 [[kv_namespaces]]
 binding = "SIREN"
 id = "c31f6ec0bc71473b985003909feae12d"
