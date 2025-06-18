@@ -15,24 +15,29 @@ jobs:
       - name: Install Wrangler
         run: npm install -g wrangler
 
-      - name: Deploy Workers with custom domains
+      - name: Deploy Workers with Custom Domains
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           for i in $(seq 1 2); do
-            NAME="siren$i"
+            WORKER="siren$i"
             DOMAIN="zxc$i.sumbangsih.dpdns.org"
-            echo "🚀 Deploying $NAME to https://$DOMAIN"
+            echo "🚀 Deploying $WORKER to https://$DOMAIN"
 
-            # Buat file wrangler untuk masing-masing Worker
+            # Buat salinan wrangler.toml dasar
             cp wrangler.toml wrangler.temp.toml
-            sed -i "s/^name = \".*\"/name = \"$NAME\"/" wrangler.temp.toml
 
-            # Tambahkan deployment block
+            # Ganti name
+            sed -i "s/^name = \".*\"/name = \"$WORKER\"/" wrangler.temp.toml
+
+            # Tambahkan routes block
             echo "" >> wrangler.temp.toml
-            echo "[deployments]" >> wrangler.temp.toml
-            echo "custom_domain = true" >> wrangler.temp.toml
+            echo "routes = [" >> wrangler.temp.toml
+            echo "  { pattern = \"$DOMAIN\", custom_domain = true }" >> wrangler.temp.toml
+            echo "]" >> wrangler.temp.toml
 
-            # Deploy (akan otomatis setup domain + SSL)
-            wrangler deploy --name $NAME --custom-domain https://$DOMAIN --config wrangler.temp.toml
+            # Deploy dengan custom domain
+            wrangler deploy --config wrangler.temp.toml
+
+            echo "✅ Deployed $WORKER to https://$DOMAIN"
           done
