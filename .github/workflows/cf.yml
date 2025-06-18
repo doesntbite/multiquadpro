@@ -30,7 +30,7 @@ jobs:
           for NAME in "${WORKERS[@]}"; do
             echo "Deploying $NAME..."
             sed -i.bak "s/^name = \".*\"/name = \"$NAME\"/" wrangler.toml
-            wrangler publish --env production --api-token "$CLOUDFLARE_API_TOKEN"
+            wrangler publish
           done
-
+          
           mv wrangler.toml.bak wrangler.toml
