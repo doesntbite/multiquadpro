@@ -1,11 +1,10 @@
-name = "siren"  # akan diganti oleh script
-
+name = "${WORKER_NAME}"
 main = "build/worker/shim.mjs"
 compatibility_date = "2024-05-23"
 minify = true
 
 routes = [
-  { pattern = "zxc.sumbangsih.dpdns.org", custom_domain = true }  # akan diganti juga
+  { pattern = "${WORKER_DOMAIN}", custom_domain = true }
 ]
 
 [[kv_namespaces]]
@@ -14,9 +13,6 @@ id = "c31f6ec0bc71473b985003909feae12d"
 
 [build]
 command = "cargo install worker-build && worker-build --release"
-
-[env.dev]
-build = { command = "cargo install worker-build && worker-build --dev" }
 
 [vars]
 UUID = "f282b878-8711-45a1-8c69-5564172123c1"
