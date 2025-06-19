@@ -1,4 +1,4 @@
-name: Deploy aio Workers (Multiple Domains)
+name: Deploy aiokv Workers (Multiple Domains)
 
 on:
   workflow_dispatch:
