@@ -1,0 +1,9 @@
+name = "aio"
+account_id = "${ACCOUNT_ID}"
+compatibility_date = "2024-06-01"
+main = "worker.js"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "BALANCER_KV"
+id = "${KV_NAMESPACE_ID}"
