@@ -62,7 +62,7 @@ jobs:
           sed -i "s|\${ACCOUNT_ID}|${{ matrix.config.account_id }}|g" wrangler.temp.toml
           sed -i "s|\${KV_NAMESPACE_ID}|${{ matrix.config.kv_namespace_id }}|g" wrangler.temp.toml
           sed -i "s|PLACEHOLDER_DOMAIN|${{ matrix.config.name }}|g" balancer.temp.js
-          sed -i 's|import { handleBalancer } from .*/balancer.js|import { handleBalancer } from "./balancer.temp.js"|g' worker.temp.js
+          sed -i "s|import { handleBalancer } from './balancer.js';|import { handleBalancer } from './balancer.temp.js';|g" worker.temp.js
           sed -i 's|main = "worker.js"|main = "worker.temp.js"|g' wrangler.temp.toml
 
       - name: Deploy to Cloudflare → ${{ matrix.config.name }}
