@@ -1,0 +1,71 @@
+name: Deploy aio Workers (Multiple Domains)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        config:
+          - name: unlimited.biz.id
+            account_id: 58d2b0fb56ebb7f76362b15c0f50fe93
+            token_secret: CF_TOKEN_UNLIMITED_BIZ_ID
+            kv_namespace_id: 8024495e704144e482c37dfd5e214b13
+
+          - name: xtradata.dpdns.org
+            account_id: f553585b5ec6727dca15efa47e977a88
+            token_secret: CF_TOKEN_XTRADATA_DPDNS_ORG
+            kv_namespace_id: 7684a6219598428ab93d46b805cdd2cf
+
+          - name: datacore.dpdns.org
+            account_id: 85b80b2caab968c5e04dd3e2b601d1ac
+            token_secret: CF_TOKEN_DATACORE_DPDNS_ORG
+            kv_namespace_id: 13172d3af86f4fa0b5ec420d3551fa8f
+
+          - name: nolimit.dpdns.org
+            account_id: afb4250e641b8d082662780e98b64b95
+            token_secret: CF_TOKEN_NOLIMIT_DPDNS_ORG
+            kv_namespace_id: 0e4587a632ec4cb2bd9f6e2da5f7bbf1
+
+          - name: eth0.dpdns.org
+            account_id: dd8f592ba03d4243a179c8851914db45
+            token_secret: CF_TOKEN_ETH0_DPDNS_ORG
+            kv_namespace_id: 5dc00fef2e1b43b195d41fa41f0b087f
+
+          - name: komporgas.dpdns.org
+            account_id: a6305b5123d7d3e470b2fbcc242c4be1
+            token_secret: CF_TOKEN_KOMPORGAS_DPDNS_ORG
+            kv_namespace_id: 1598fffd4bec4a40ab89cd80aac0db7e
+
+          - name: proxybox.dpdns.org
+            account_id: 1178a247bbba2160b91d5e9822a416d6
+            token_secret: CF_TOKEN_PROXYBOX_DPDNS_ORG
+            kv_namespace_id: a52412a9bb3747e496013f7c965bf27e
+
+            
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Prepare wrangler.toml
+        working-directory: aio
+        run: |
+          cp wrangler.toml wrangler.temp.toml
+          sed -i "s|\${ACCOUNT_ID}|${{ matrix.config.account_id }}|g" wrangler.temp.toml
+
+      - name: Inject domain into balancer.js
+        working-directory: aio
+        run: |
+          sed -i "s|\"PLACEHOLDER_DOMAIN\"|\"${{ matrix.config.name }}\"|g" balancer.js
+
+      - name: Deploy to Cloudflare → ${{ matrix.config.name }}
+        working-directory: aio
+        run: wrangler deploy --config wrangler.temp.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets[matrix.config.token_secret] }}
