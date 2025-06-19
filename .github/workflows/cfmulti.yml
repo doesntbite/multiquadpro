@@ -28,8 +28,8 @@ jobs:
           cp wrangler.toml wrangler.toml.bak
 
           for i in {1..30}; do
-            name="siren$i"
-            domain="zxc$i.sumbangsih.dpdns.org"
+            name="quadpro$i"
+            domain="quadpro$i.eth0.dpdns.org"
 
             echo "🌐 Deploying $name → $domain"
 
