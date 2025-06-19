@@ -17,5 +17,5 @@ command = "cargo install worker-build && worker-build --release"
 
 [vars]
 UUID = "f282b878-8711-45a1-8c69-5564172123c1"
-MAIN_PAGE_URL = "https://unlimited.biz.id/"
+MAIN_PAGE_URL = "https://raw.githubusercontent.com/doesntbite/simplehtml/refs/heads/main/countdown.html"
 PROXY_KV_URL = "https://raw.githubusercontent.com/FoolVPN-ID/Nautica/refs/heads/main/kvProxyList.json"
