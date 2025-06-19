@@ -58,6 +58,7 @@ jobs:
           cp wrangler.toml wrangler.temp.toml
           sed -i "s|\${ACCOUNT_ID}|${{ matrix.config.account_id }}|g" wrangler.temp.toml
           sed -i "s|\${KV_NAMESPACE_ID}|${{ matrix.config.kv_namespace_id }}|g" wrangler.temp.toml
+          sed -i "s|\${domain}|${{ matrix.config.name }}|g" wrangler.temp.toml
 
       - name: Deploy to Cloudflare → ${{ matrix.config.name }}
         working-directory: aio
