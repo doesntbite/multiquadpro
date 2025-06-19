@@ -6,4 +6,4 @@ workers_dev = true
 
 [vars]
 SUPABASE_URL = "https://cbskpfllobxxqryrxvkt.supabase.co"
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNic2twZmxsb2J4eHFyeXJ4dmt0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzNDcxOTIsImV4cCI6MjA2NTkyMzE5Mn0._tHqmlussEYAD_ERRp_KI40YKDpF-cX38bAiluBtVNQ"
