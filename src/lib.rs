@@ -33,6 +33,12 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
         .await
 }
 
+async fn get_response_from_url(url: String) -> Result<Response> {
+    let req = Fetch::Url(Url::parse(url.as_str())?);
+    let mut res = req.send().await?;
+    Response::from_html(res.text().await?)
+}
+
 async fn fe(_: Request, cx: RouteContext<Config>) -> Result<Response> {
     get_response_from_url(cx.data.main_page_url).await
 }
