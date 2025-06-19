@@ -25,7 +25,7 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
     let config = Config { uuid, proxy_addr: host, proxy_port: 443, main_page_url, proxy_kv_url };
 
     Router::with_data(config)
-        .on_async("*", fe)
+        .on_async("/", fe)
         .on_async("/aioproxybot/cc/:proxyip", tunnel)
         .on_async("/aioproxybot/:proxyip", tunnel)
         .on_async("/:proxyip", tunnel)
@@ -96,6 +96,6 @@ async fn tunnel(req: Request, mut cx: RouteContext<Config>) -> Result<Response> 
     
         Response::from_websocket(client)
     } else {
-        Response::redirect(cx.data.main_page_url.parse()?)
+        get_response_from_url(cx.data.main_page_url.clone()).await
     }
 }
