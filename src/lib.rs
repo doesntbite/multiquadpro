@@ -34,7 +34,7 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
 }
 
 async fn fe(_: Request, cx: RouteContext<Config>) -> Result<Response> {
-    Response::redirect(cx.data.main_page_url.parse()?)
+    get_response_from_url(cx.data.main_page_url).await
 }
 
 async fn tunnel(req: Request, mut cx: RouteContext<Config>) -> Result<Response> {
