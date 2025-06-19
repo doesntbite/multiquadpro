@@ -10,9 +10,9 @@ jobs:
     strategy:
       matrix:
         config:
-          - name: eth0.dpdns.org
-            account_id: dd8f592ba03d4243a179c8851914db45
-            token_secret: CF_TOKEN_ETH0_DPDNS_ORG
+          - name: sumbangsih.dpdns.org
+            account_id: 22e232751a1229b82bc71d1fbdb170c1
+            token_secret: CF_TOKEN_SUMBANGSIH_DPDNS_ORG
             kv_namespace_id: 5bbfc353fd1247ee861d1b178742eaff
 
     steps:
