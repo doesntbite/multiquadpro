@@ -15,11 +15,6 @@ jobs:
             token_secret: CF_TOKEN_SUMBANGSIH_DPDNS_ORG
             kv_namespace_id: c31f6ec0bc71473b985003909feae12d
 
-          - name: unlimited.biz.id
-            account_id: 58d2b0fb56ebb7f76362b15c0f50fe93
-            token_secret: CF_TOKEN_UNLIMITED_BIZ_ID
-            kv_namespace_id: b10d811755564eebb49d0bb7ac2c4f82
-
           - name: loophole.biz.id
             account_id: fd31c7ab0ab16726ef5a2833f3451268
             token_secret: CF_TOKEN_LOOPHOLE_BIZ_ID
