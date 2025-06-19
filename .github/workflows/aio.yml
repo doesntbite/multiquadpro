@@ -10,20 +10,10 @@ jobs:
     strategy:
       matrix:
         config:
-          - name: sumbangsih.dpdns.org
-            account_id: 22e232751a1229b82bc71d1fbdb170c1
-            token_secret: CF_TOKEN_SUMBANGSIH_DPDNS_ORG
-            kv_namespace_id: 880e84cf704e4ee7991bc100a9a8b4ac
-
           - name: unlimited.biz.id
             account_id: 58d2b0fb56ebb7f76362b15c0f50fe93
             token_secret: CF_TOKEN_UNLIMITED_BIZ_ID
             kv_namespace_id: 8024495e704144e482c37dfd5e214b13
-
-          - name: loophole.biz.id
-            account_id: fd31c7ab0ab16726ef5a2833f3451268
-            token_secret: CF_TOKEN_LOOPHOLE_BIZ_ID
-            kv_namespace_id: e0de4024f27640dda88d207e4e083331
 
           - name: xtradata.dpdns.org
             account_id: f553585b5ec6727dca15efa47e977a88
@@ -34,11 +24,6 @@ jobs:
             account_id: 85b80b2caab968c5e04dd3e2b601d1ac
             token_secret: CF_TOKEN_DATACORE_DPDNS_ORG
             kv_namespace_id: 13172d3af86f4fa0b5ec420d3551fa8f
-
-          - name: zipzap.biz.id
-            account_id: fda1d578fa61e7f3684206d471fdabdf
-            token_secret: CF_TOKEN_ZIPZAP_BIZ_ID
-            kv_namespace_id: 49d064b119ba4ba1aaa1e364d348bdc3
 
           - name: nolimit.dpdns.org
             account_id: afb4250e641b8d082662780e98b64b95
