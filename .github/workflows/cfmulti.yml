@@ -13,7 +13,7 @@ jobs:
           - name: sumbangsih.dpdns.org
             account_id: 22e232751a1229b82bc71d1fbdb170c1
             token_secret: CF_TOKEN_SUMBANGSIH_DPDNS_ORG
-            kv_namespace_id: 5bbfc353fd1247ee861d1b178742eaff
+            kv_namespace_id: c31f6ec0bc71473b985003909feae12d
 
     steps:
       - name: Checkout Repository
