@@ -15,6 +15,51 @@ jobs:
             token_secret: CF_TOKEN_SUMBANGSIH_DPDNS_ORG
             kv_namespace_id: c31f6ec0bc71473b985003909feae12d
 
+          - name: unlimited.biz.id
+            account_id: 58d2b0fb56ebb7f76362b15c0f50fe93
+            token_secret: CF_TOKEN_UNLIMITED_BIZ_ID
+            kv_namespace_id: b10d811755564eebb49d0bb7ac2c4f82
+
+          - name: loophole.biz.id
+            account_id: fd31c7ab0ab16726ef5a2833f3451268
+            token_secret: CF_TOKEN_LOOPHOLE_BIZ_ID
+            kv_namespace_id: e34d9d5c1bc94bc894c3beca7d5876aa
+
+          - name: xtradata.dpdns.org
+            account_id: f553585b5ec6727dca15efa47e977a88
+            token_secret: CF_TOKEN_XTRADATA_DPDNS_ORG
+            kv_namespace_id: 6b84a8f993b04dc7aa01939408d8ff70
+
+          - name: datacore.dpdns.org
+            account_id: 85b80b2caab968c5e04dd3e2b601d1ac
+            token_secret: CF_TOKEN_DATACORE_DPDNS_ORG
+            kv_namespace_id: 7f835686e44c4b0c8566aa42359d85c2
+
+          - name: zipzap.biz.id
+            account_id: fda1d578fa61e7f3684206d471fdabdf
+            token_secret: CF_TOKEN_ZIPZAP_BIZ_ID
+            kv_namespace_id: bbcab4887fb84d05b6d9f675924e92ea
+
+          - name: nolimit.dpdns.org
+            account_id: afb4250e641b8d082662780e98b64b95
+            token_secret: CF_TOKEN_NOLIMIT_DPDNS_ORG
+            kv_namespace_id: f26cdd83d19047daa6877faabe982183
+
+          - name: eth0.dpdns.org
+            account_id: dd8f592ba03d4243a179c8851914db45
+            token_secret: CF_TOKEN_ETH0_DPDNS_ORG
+            kv_namespace_id: 5bbfc353fd1247ee861d1b178742eaff
+
+          - name: komporgas.dpdns.org
+            account_id: a6305b5123d7d3e470b2fbcc242c4be1
+            token_secret: CF_TOKEN_KOMPORGAS_DPDNS_ORG
+            kv_namespace_id: e3be9dfd61cb485db6356ddc1fad1f62
+
+          - name: proxybox.dpdns.org
+            account_id: 1178a247bbba2160b91d5e9822a416d6
+            token_secret: CF_TOKEN_PROXYBOX_DPDNS_ORG
+            kv_namespace_id: 7021c1863990421dbe2ed07a7fe65f99
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
