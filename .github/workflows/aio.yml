@@ -1,4 +1,4 @@
-name: Deploy aio Cloudflare Workers (Multiple Accounts)
+name: Deploy aio Workers (Multiple Domains)
 
 on:
   workflow_dispatch:
@@ -45,6 +45,7 @@ jobs:
             token_secret: CF_TOKEN_PROXYBOX_DPDNS_ORG
             kv_namespace_id: a52412a9bb3747e496013f7c965bf27e
 
+            
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -52,21 +53,21 @@ jobs:
       - name: Install Wrangler
         run: npm install -g wrangler
 
-      - name: Prepare deployment files
+      - name: Prepare wrangler.toml
         working-directory: aio
         run: |
           cp wrangler.toml wrangler.temp.toml
-          cp balancer.js balancer.temp.js
-          cp worker.js worker.temp.js
-
           sed -i "s|\${ACCOUNT_ID}|${{ matrix.config.account_id }}|g" wrangler.temp.toml
           sed -i "s|\${KV_NAMESPACE_ID}|${{ matrix.config.kv_namespace_id }}|g" wrangler.temp.toml
-          sed -i "s|PLACEHOLDER_DOMAIN|${{ matrix.config.name }}|g" balancer.temp.js
-          sed -i "s|import { handleBalancer } from './balancer.js';|import { handleBalancer } from './balancer.temp.js';|g" worker.temp.js
-          sed -i 's|main = "worker.js"|main = "worker.temp.js"|g' wrangler.temp.toml
+
+      - name: Inject domain into balancer.js
+        working-directory: aio
+        run: |
+          sed -i "s|\"PLACEHOLDER_DOMAIN\"|\"${{ matrix.config.name }}\"|g" balancer.js
 
       - name: Deploy to Cloudflare → ${{ matrix.config.name }}
         working-directory: aio
         run: wrangler deploy --config wrangler.temp.toml
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets[matrix.config.token_secret] }}
+
