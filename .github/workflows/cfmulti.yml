@@ -1,48 +1,88 @@
-name: Deploy 10 Workers with Custom Domains
+name: Deploy Workers to Multiple Cloudflare Accounts
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 1 * * *'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        config:
+          - name: unlimited.biz.id
+            account_id: 58d2b0fb56ebb7f76362b15c0f50fe93
+            token_secret: CF_TOKEN_UNLIMITED_BIZ_ID
+            kv_namespace_id: FoLFjlKhCv5K-Ab1d9aNSVh3I8YvMUnL0kTDFOEa
+          - name: loophole.biz.id
+            account_id: fd31c7ab0ab16726ef5a2833f3451268
+            token_secret: CF_TOKEN_LOOPHOLE_BIZ_ID
+            kv_namespace_id: gS3UyvGRCPZw4BUaSvjxklaB7FnMyBiIs-uAbV5l
+          - name: xtradata.dpdns.org
+            account_id: f553585b5ec6727dca15efa47e977a88
+            token_secret: CF_TOKEN_XTRADATA_DPDNS_ORG
+            kv_namespace_id: RPsy1YZNECNYpMHO-EEwTtKV2E1QaoeplSv0J-nn
+          - name: datacore.dpdns.org
+            account_id: 85b80b2caab968c5e04dd3e2b601d1ac
+            token_secret: CF_TOKEN_DATACORE_DPDNS_ORG
+            kv_namespace_id: ogqkZBOpo_48S3glBX33mZaPt8pLmJHT1ue2RVnd
+          - name: zipzap.biz.id
+            account_id: fda1d578fa61e7f3684206d471fdabdf
+            token_secret: CF_TOKEN_ZIPZAP_BIZ_ID
+            kv_namespace_id: 3xeMkXa75vzP9IKJpEZYz4BoibnI04AGQSdELM8m
+          - name: sumbangsih.dpdns.org
+            account_id: 22e232751a1229b82bc71d1fbdb170c1
+            token_secret: CF_TOKEN_SUMBANGSIH_DPDNS_ORG
+            kv_namespace_id: 3xeMkXa75vzP9IKJpEZYz4BoibnI04AGQSdELM8m
+          - name: nolimit.dpdns.org
+            account_id: afb4250e641b8d082662780e98b64b95
+            token_secret: CF_TOKEN_NOLIMIT_DPDNS_ORG
+            kv_namespace_id: luzhd5PwZ618kkoSgbczvkK3bg3OO3kwMG0jD7J2
+          - name: eth0.dpdns.org
+            account_id: dd8f592ba03d4243a179c8851914db45
+            token_secret: CF_TOKEN_ETH0_DPDNS_ORG
+            kv_namespace_id: qg1M9o5ykja8gqXHaw2o92iKLdXRDdK0OtlH96qX
+          - name: komporgas.dpdns.org
+            account_id: a6305b5123d7d3e470b2fbcc242c4be1
+            token_secret: CF_TOKEN_KOMPORGAS_DPDNS_ORG
+            kv_namespace_id: hou6YFmqfWgb1zSlVEts5I_G-VBYByTLIrTGYxG3
+          - name: proxybox.dpdns.org
+            account_id: 1178a247bbba2160b91d5e9822a416d6
+            token_secret: CF_TOKEN_PROXYBOX_DPDNS_ORG
+            kv_namespace_id: Ch15rIXlnv98oAYKoQIop5vwZzVfKxx6ZtD1ThEH
+
     steps:
-      - name: 📥 Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🧱 Setup Node.js (v20+ untuk Wrangler)
+      - name: Setup Node.js & Wrangler
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm install -g wrangler
 
-      - name: 📦 Install Wrangler
-        run: npm install -g wrangler
-
-      - name: 🚀 Deploy Workers with Custom Domains
+      - name: Deploy 30 Workers for ${{ matrix.config.name }}
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets[matrix.config.token_secret] }}
         run: |
           cp wrangler.toml wrangler.toml.bak
 
           for i in {1..30}; do
-            name="quadpro$i"
-            domain="quadpro$i.eth0.dpdns.org"
+            WORKER_NAME="quadpro$i"
+            WORKER_DOMAIN="quadpro$i.${{ matrix.config.name }}"
 
-            echo "🌐 Deploying $name → $domain"
+            echo "🚀 Deploying $WORKER_NAME → $WORKER_DOMAIN"
 
             cp wrangler.toml.bak wrangler.temp.toml
 
-            # Ganti name dan domain route
-            sed -i "s/^name = \".*\"/name = \"$name\"/" wrangler.temp.toml
-            sed -i "s|pattern = \".*\"|pattern = \"$domain\"|" wrangler.temp.toml
+            sed -i "s|\${WORKER_NAME}|$WORKER_NAME|g" wrangler.temp.toml
+            sed -i "s|\${WORKER_DOMAIN}|$WORKER_DOMAIN|g" wrangler.temp.toml
+            sed -i "s|\${ACCOUNT_ID}|${{ matrix.config.account_id }}|g" wrangler.temp.toml
+            sed -i "s|\${KV_NAMESPACE_ID}|${{ matrix.config.kv_namespace_id }}|g" wrangler.temp.toml
 
-            # Deploy
             wrangler deploy --config wrangler.temp.toml
 
-            echo "✅ Selesai deploy $name → $domain"
+            echo "✅ Selesai deploy $WORKER_NAME → $WORKER_DOMAIN"
           done
 
           rm -f wrangler.temp.toml
