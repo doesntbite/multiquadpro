@@ -25,22 +25,22 @@ async fn main(req: Request, env: Env, _: Context) -> Result<Response> {
     let config = Config { uuid, proxy_addr: host, proxy_port: 443, main_page_url, proxy_kv_url };
 
     Router::with_data(config)
+        .on_async("*", fe)
         .on_async("/aioproxybot/cc/:proxyip", tunnel)
         .on_async("/aioproxybot/:proxyip", tunnel)
         .on_async("/:proxyip", tunnel)
-        .on_async("*", fe) // wildcard harus di paling bawah
         .run(req, env)
         .await
 }
 
 async fn get_response_from_url(url: String) -> Result<Response> {
-    let req = Fetch::Url(Url::parse(&url)?);
+    let req = Fetch::Url(Url::parse(url.as_str())?);
     let mut res = req.send().await?;
     Response::from_html(res.text().await?)
 }
 
 async fn fe(_: Request, cx: RouteContext<Config>) -> Result<Response> {
-    get_response_from_url(cx.data.main_page_url.clone()).await
+    get_response_from_url(cx.data.main_page_url).await
 }
 
 async fn tunnel(req: Request, mut cx: RouteContext<Config>) -> Result<Response> {
