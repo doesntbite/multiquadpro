@@ -2,7 +2,7 @@ export async function handleBalancer(env, req) {
   const url = new URL(req.url);
   const path = url.pathname;
   const kv = env.BALANCER_KV;
-  const domain = env.DOMAIN;
+  const domain = "PLACEHOLDER_DOMAIN";
   const hosts = Array.from({ length: 30 }, (_, i) => `quadpro${i + 1}.${domain}`);
 
   // Endpoint: reset statistik
