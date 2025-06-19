@@ -54,18 +54,18 @@ jobs:
         run: npm install -g wrangler
 
       - name: Prepare wrangler.toml
-        working-directory: aio
+        working-directory: aionokv
         run: |
           cp wrangler.toml wrangler.temp.toml
           sed -i "s|\${ACCOUNT_ID}|${{ matrix.config.account_id }}|g" wrangler.temp.toml
 
       - name: Inject domain into balancer.js
-        working-directory: aio
+        working-directory: aionokv
         run: |
           sed -i "s|\"PLACEHOLDER_DOMAIN\"|\"${{ matrix.config.name }}\"|g" balancer.js
 
       - name: Deploy to Cloudflare → ${{ matrix.config.name }}
-        working-directory: aio
+        working-directory: aionokv
         run: wrangler deploy --config wrangler.temp.toml
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets[matrix.config.token_secret] }}
