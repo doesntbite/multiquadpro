@@ -10,15 +10,15 @@ jobs:
     strategy:
       matrix:
         config:
-          - name: unlimited.biz.id
-            account_id: 58d2b0fb56ebb7f76362b15c0f50fe93
-            token_secret: CF_TOKEN_UNLIMITED_BIZ_ID
-            kv_namespace_id: b10d811755564eebb49d0bb7ac2c4f82
+          - name: loophole.biz.id
+            account_id: fd31c7ab0ab16726ef5a2833f3451268
+            token_secret: CF_TOKEN_LOOPHOLE_BIZ_ID
+            kv_namespace_id: e34d9d5c1bc94bc894c3beca7d5876aa
 
-          - name: nolimit.dpdns.org
-            account_id: afb4250e641b8d082662780e98b64b95
-            token_secret: CF_TOKEN_NOLIMIT_DPDNS_ORG
-            kv_namespace_id: f26cdd83d19047daa6877faabe982183
+          - name: zipzap.biz.id
+            account_id: fda1d578fa61e7f3684206d471fdabdf
+            token_secret: CF_TOKEN_ZIPZAP_BIZ_ID
+            kv_namespace_id: bbcab4887fb84d05b6d9f675924e92ea
 
     steps:
       - name: Checkout Repository
